@@ -1,0 +1,74 @@
+"""Intent classification + agent routing, mirroring ai-service/core/orchestrator.py."""
+from __future__ import annotations
+
+from agents.default_fallback_agent import fallback_agent
+from agents.documentation_agent import documentation_agent
+from agents.explainplan_agent import explainplan_agent
+from agents.optimization_agent import optimization_agent
+from agents.sql_agent import sqlgeneration_agent
+from db.models import DatabaseConnection
+from services.llm_factory import get_llm_from_credentials
+
+VALID_INTENTS = {"sql_generation", "explain_plan", "optimization", "documentation", "general"}
+
+_AGENT_BUILDERS = {
+    "sql_generation": sqlgeneration_agent.build_agent,
+    "explain_plan": explainplan_agent.build_agent,
+    "optimization": optimization_agent.build_agent,
+    "documentation": documentation_agent.build_agent,
+    "general": fallback_agent.build_agent,
+}
+
+_CLASSIFIER_PROMPT = """Classify the user's latest message into exactly one of these intents:
+- sql_generation: browsing schema, generating/running SELECT/INSERT/UPDATE/DELETE/CREATE/ALTER/DROP SQL
+- explain_plan: asking to explain/show a query's execution plan
+- optimization: asking to optimize/speed up a query, or asking about indexes for performance
+- documentation: general PostgreSQL concept/how-to questions; questions about the business
+  meaning/purpose of the user's own tables or columns (e.g. "what is the products table for",
+  "what does the items column mean", "tell me about the configuration schema"); greetings/
+  small talk/casual conversation (e.g. "hi", "I'm bored", "how are you"); or any other
+  question unrelated to databases/SQL/this application (e.g. "how is the weather", "tell me
+  a joke", general trivia)
+- general: anything else / unclear
+
+Respond with ONLY the intent keyword, nothing else.
+
+Conversation history (most recent last):
+{history}
+
+User message: {message}
+"""
+
+
+async def classify_intent(message: str, history: list[dict], llm_credentials: dict) -> str:
+    llm = get_llm_from_credentials(llm_credentials)
+    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history[-6:])
+    prompt = _CLASSIFIER_PROMPT.format(history=history_text, message=message)
+    response = await llm.ainvoke(prompt)
+    raw = (response.content or "").strip().lower()
+    for intent in VALID_INTENTS:
+        if intent in raw:
+            return intent
+    return "general"
+
+
+async def resolve_intent(
+    *, explicit_intent: str | None, message: str, history: list[dict], llm_credentials: dict
+) -> str:
+    if explicit_intent and explicit_intent in VALID_INTENTS:
+        return explicit_intent
+    return await classify_intent(message, history, llm_credentials)
+
+
+async def get_agent_for_intent(
+    *,
+    intent: str,
+    user_id: int,
+    connection: DatabaseConnection,
+    llm_config_id: int,
+    llm_credentials: dict,
+):
+    builder = _AGENT_BUILDERS.get(intent, fallback_agent.build_agent)
+    return await builder(
+        user_id=user_id, connection=connection, llm_config_id=llm_config_id, llm_credentials=llm_credentials
+    )
