@@ -122,6 +122,9 @@ export default function Documentation() {
                   <Typography variant="body2">
                     <strong>SQL Agent</strong> — turns your request into SQL (SELECT, INSERT,
                     UPDATE, DELETE, CREATE, ALTER, DROP) and executes it against your database.
+                    It can also generate a visual <strong>ER diagram</strong> of your tables and
+                    look up the exact <strong>DDL/definition</strong> of a table, view, function,
+                    procedure, trigger, sequence, or index.
                   </Typography>
                 </li>
                 <li>
@@ -379,6 +382,26 @@ export default function Documentation() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
+                    <TableCell>Generate an ER diagram</TableCell>
+                    <TableCell>"Give me an ER diagram for the public schema", "Show me a diagram of tables orders, customers, products"</TableCell>
+                    <TableCell>
+                      Renders a visual entity-relationship diagram (tables, columns, primary/
+                      foreign keys) as a PNG image shown inline in the chat, with a direct
+                      download link for the full-resolution file.
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Get an object's DDL / definition</TableCell>
+                    <TableCell>"Give me the DDL for table customers", "Show me the definition of procedure add_two_nums", "Create query for the orders_view view"</TableCell>
+                    <TableCell>
+                      Looks up and returns the exact <code>CREATE</code> statement for a table,
+                      view, materialized view, function, procedure, trigger, sequence, or index —
+                      searching every schema/object type automatically if you don't specify one,
+                      and showing all matches if the name exists more than once (e.g. an
+                      overloaded function).
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
                     <TableCell>Business meaning / documentation</TableCell>
                     <TableCell>
                       "What is the customers table used for?", "What does the status column
@@ -502,6 +525,8 @@ export default function Documentation() {
                 <li><Typography variant="body2">"Which customers haven't ordered in 90 days?"</Typography></li>
                 <li><Typography variant="body2">"Add a column called status (text) to the orders table"</Typography></li>
                 <li><Typography variant="body2">"Delete test users with email like %@test.com"</Typography></li>
+                <li><Typography variant="body2">"Give me an ER diagram for the public schema"</Typography></li>
+                <li><Typography variant="body2">"Show me the DDL for table customers"</Typography></li>
               </Box>
             </SectionCard>
           </Grid>
@@ -514,6 +539,7 @@ export default function Documentation() {
                 <li><Typography variant="body2">If unsure of the schema first, just ask "what tables do I have?" before writing a complex query.</Typography></li>
                 <li><Typography variant="body2">For destructive changes, mention scope explicitly (e.g. "only rows where...") to avoid accidentally affecting the whole table.</Typography></li>
                 <li><Typography variant="body2">For business-meaning questions ("what is this table for?"), upload a <code>.sql</code> file or ER diagram image via the <strong>Uploads</strong> button so the agent has more to go on than table/column names alone.</Typography></li>
+                <li><Typography variant="body2">If you just want to know an object's exact definition (not what it's for), ask for its "DDL" or "definition" instead — you'll get the real <code>CREATE</code> statement, not a plain-English summary.</Typography></li>
               </Box>
             </SectionCard>
           </Grid>
@@ -728,6 +754,46 @@ export default function Documentation() {
                 Yes. Hover over any session in the sidebar to reveal edit and delete icons —
                 renaming replaces the auto-generated title (from your first message) with your
                 own, and deleting permanently removes that session and its messages.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle1">How many chat sessions are kept per database?</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2">
+                By default 15 per database connection. You can change this from the{" "}
+                <strong>Settings</strong> page (1–20) — once you start a new chat beyond that
+                limit, your oldest session for that database (by last activity) is automatically
+                deleted, similar to how ChatGPT drops old chats once you hit a cap.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle1">Can I generate an ER diagram of my tables?</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2">
+                Yes — ask something like "give me an ER diagram for the public schema" or "show
+                me a diagram of tables orders, customers, and products". The chatbot renders a
+                PNG image inline (boxes for tables, columns, primary/foreign key markers, and
+                relationship arrows) plus a direct download link for the full-size file.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle1">Can I get the DDL/create statement for a table, view, or function?</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2">
+                Yes — ask for the "DDL", "definition", "create query", or "create statement" of
+                any table, view, materialized view, function, procedure, trigger, sequence, or
+                index (e.g. "show me the definition of procedure add_two_nums"). You don't need
+                to specify the schema or object type — the chatbot searches everything and shows
+                all matches, clearly labeled, if the same name exists in more than one place.
               </Typography>
             </AccordionDetails>
           </Accordion>

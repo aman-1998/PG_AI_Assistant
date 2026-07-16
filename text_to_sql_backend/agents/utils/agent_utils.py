@@ -30,6 +30,8 @@ _SQL_AGENT_TOOLS = frozenset(
         "list_indexes",
         "export_query_to_csv",
         "export_query_to_json",
+        "generate_er_diagram",
+        "get_object_ddl",
     }
 )
 

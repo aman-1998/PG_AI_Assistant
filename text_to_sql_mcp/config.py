@@ -29,5 +29,9 @@ class Settings(BaseSettings):
     # reverse proxy) than HOST/PORT above.
     EXPORT_PUBLIC_BASE_URL: str = "http://localhost:8020"
 
+    # ER diagram (PNG) generation settings.
+    DIAGRAM_DIR: str = "./diagrams"
+    DIAGRAM_TTL_SECONDS: int = 3600
+
 
 settings = Settings()

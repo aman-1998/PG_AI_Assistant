@@ -10,6 +10,11 @@ import {
   Button,
   Divider,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import EditIcon from "@mui/icons-material/Edit";
@@ -44,6 +49,7 @@ export default function ChatSidebar({
 }: Props) {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
 
   const startEditing = (session: ChatSession) => {
     setEditingId(session.id);
@@ -63,10 +69,19 @@ export default function ChatSidebar({
     cancelEditing();
   };
 
-  const handleDelete = (session: ChatSession) => {
-    if (window.confirm(`Delete "${sessionLabel(session)}"? This cannot be undone.`)) {
-      onDelete(session);
+  const handleDeleteClick = (session: ChatSession) => {
+    setSessionToDelete(session);
+  };
+
+  const closeDeleteDialog = () => {
+    setSessionToDelete(null);
+  };
+
+  const confirmDelete = () => {
+    if (sessionToDelete) {
+      onDelete(sessionToDelete);
     }
+    setSessionToDelete(null);
   };
 
   return (
@@ -162,7 +177,7 @@ export default function ChatSidebar({
                           disabled={disabled}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(session);
+                            handleDeleteClick(session);
                           }}
                         >
                           <DeleteIcon fontSize="small" />
@@ -176,6 +191,22 @@ export default function ChatSidebar({
           </List>
         )}
       </Box>
+      <Dialog open={sessionToDelete !== null} onClose={closeDeleteDialog}>
+        <DialogTitle>Delete chat?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {sessionToDelete
+              ? `Are you sure you want to delete "${sessionLabel(sessionToDelete)}"? This cannot be undone.`
+              : ""}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDeleteDialog}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

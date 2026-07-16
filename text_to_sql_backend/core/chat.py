@@ -20,6 +20,10 @@ from services.llm_factory import extract_provider_error_message
 
 _HISTORY_TURNS = 10
 
+# Sentinel assistant replies persisted when a turn produced no real text (see
+# `_persist_turn` below) - these are technical placeholders, not real answers.
+_NO_TEXT_SENTINELS = {"(no response)", "(stopped by user)"}
+
 
 def _sse(event_type: str, **payload) -> str:
     data = {"type": event_type, **payload}
@@ -125,7 +129,29 @@ def _load_history(db: Session, session_id: int, retention_days: int) -> list[dic
     # Converse API is rejected outright ("The content field in the Message
     # object at messages.N is empty"), so drop them - they add no useful
     # context anyway.
-    return [{"role": m.role, "content": m.content} for m in messages if m.content]
+    #
+    # Also drop turns whose assistant reply is one of the "no real text"
+    # sentinel placeholders (see `_NO_TEXT_SENTINELS`/`_persist_turn`), along
+    # with their paired user message. A tool-only turn was already fully
+    # resolved live via the tool-call events streamed to the user at the
+    # time, so replaying just the bare question with a placeholder answer
+    # back to the LLM in a later turn makes it think that old question is
+    # still outstanding and needs re-answering alongside the new one.
+    result: list[dict] = []
+    for i, m in enumerate(messages):
+        if not m.content:
+            continue
+        if (
+            m.role == "user"
+            and i + 1 < len(messages)
+            and messages[i + 1].role == "assistant"
+            and messages[i + 1].content in _NO_TEXT_SENTINELS
+        ):
+            continue
+        if m.role == "assistant" and m.content in _NO_TEXT_SENTINELS:
+            continue
+        result.append({"role": m.role, "content": m.content})
+    return result
 
 
 def _persist_turn(

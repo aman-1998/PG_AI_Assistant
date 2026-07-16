@@ -109,6 +109,17 @@ const markdownComponents = {
   // CodeBlock already renders its own <pre>; avoid double-wrapping in a
   // default, unstyled <pre> tag from react-markdown.
   pre: ({ children }: any) => <>{children}</>,
+  // Tool-generated images (e.g. the ER diagram tool's download_url) render as
+  // ![alt](url) markdown - bound their width to the bubble and open full size
+  // in a new tab on click, since raw <img> would otherwise overflow.
+  img: ({ node, ref, ...props }: any) => (
+    <Box
+      component="img"
+      onClick={() => window.open(props.src, "_blank", "noopener,noreferrer")}
+      sx={{ maxWidth: "100%", height: "auto", borderRadius: 1, my: 1, cursor: "pointer", display: "block" }}
+      {...props}
+    />
+  ),
   p: ({ node, ref, ...props }: any) => <Typography variant="body1" component="p" sx={{ m: 0, mb: 1 }} {...props} />,
   ul: ({ node, ref, ...props }: any) => <Box component="ul" sx={{ m: 0, mb: 1, pl: 3 }} {...props} />,
   ol: ({ node, ref, ...props }: any) => <Box component="ol" sx={{ m: 0, mb: 1, pl: 3 }} {...props} />,

@@ -20,12 +20,20 @@ _AGENT_BUILDERS = {
 }
 
 _CLASSIFIER_PROMPT = """Classify the user's latest message into exactly one of these intents:
-- sql_generation: browsing schema, generating/running SELECT/INSERT/UPDATE/DELETE/CREATE/ALTER/DROP SQL
+- sql_generation: browsing schema, generating/running SELECT/INSERT/UPDATE/DELETE/CREATE/ALTER/DROP SQL;
+  ALSO any request for a visual/ER (Entity-Relationship) diagram or schema diagram of tables
+  (e.g. "give me an ER diagram for the public schema", "show me a diagram of tables t1, t2, t3",
+  "visualize the schema") - these must be classified as sql_generation, NOT documentation;
+  ALSO any request for the DDL/definition/"create query"/"create statement" of a table, view,
+  function, procedure, trigger, sequence, or index (e.g. "give me the DDL for table customers",
+  "show me the definition of procedure add_two_nums") - these must be classified as
+  sql_generation, NOT documentation
 - explain_plan: asking to explain/show a query's execution plan
 - optimization: asking to optimize/speed up a query, or asking about indexes for performance
 - documentation: general PostgreSQL concept/how-to questions; questions about the business
   meaning/purpose of the user's own tables or columns (e.g. "what is the products table for",
-  "what does the items column mean", "tell me about the configuration schema"); greetings/
+  "what does the items column mean", "tell me about the configuration schema") - but NOT
+  requests for a visual/ER diagram or an object's DDL/definition, which are sql_generation; greetings/
   small talk/casual conversation (e.g. "hi", "I'm bored", "how are you"); or any other
   question unrelated to databases/SQL/this application (e.g. "how is the weather", "tell me
   a joke", general trivia)

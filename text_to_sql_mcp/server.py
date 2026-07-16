@@ -19,6 +19,8 @@ from mcp_instance import mcp
 
 # Import tool modules purely for their @mcp.tool() registration side-effects.
 from tools import (  # noqa: F401
+    ddl_tools,
+    er_diagram_tools,
     explain_tools,
     export_tools,
     metrics_tools,
@@ -46,6 +48,7 @@ _mcp_asgi_app = mcp.streamable_http_app()
 app = Starlette(
     routes=[
         Route("/exports/{file_id}", export_tools.download_export, methods=["GET"]),
+        Route("/diagrams/{file_id}", er_diagram_tools.download_diagram, methods=["GET"]),
         Mount("/", app=ConnectionTokenMiddleware(_mcp_asgi_app)),
     ],
     lifespan=lambda app: mcp.session_manager.run(),
