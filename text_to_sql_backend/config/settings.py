@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # editing this hardcoded default — committing real credentials to source
     # control is a security risk (CWE-798). This default is only meant as a
     # fallback for local dev.
-    DATABASE_URL: str = "postgresql+psycopg2://uc_pg_admin:PGr3$Vertica-uc202b@localhost:5051/ucdb?sslmode=disable"
+    DATABASE_URL: str = "postgresql+psycopg2://postgres:root@localhost:5432/aiassistant?sslmode=disable"
 
     # Postgres schema the control-plane tables (and, unless overridden, the RAG
     # tables) are created in/looked up from — instead of the default "public" schema.
