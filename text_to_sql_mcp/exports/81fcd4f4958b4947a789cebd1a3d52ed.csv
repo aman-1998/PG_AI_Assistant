@@ -1,0 +1,7 @@
+id,user_id,database_id,query,title,created_at
+1220,dbadmin,1,"      SELECT schema_name
+      FROM v_catalog.schemata
+      WHERE schema_name = 'schema_1782112925266_640';
+    ",New query,2026-06-22T03:22:07.719686-04:00
+1221,dbadmin,1,DROP SCHEMA IF EXISTS schema_1782112925266_640 CASCADE;,New query,2026-06-22T03:22:10.526294-04:00
+1238,dbadmin,1,DROP TABLE IF EXISTS public.mylintable;,New query,2026-06-22T03:23:10.905716-04:00

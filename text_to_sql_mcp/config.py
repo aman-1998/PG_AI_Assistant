@@ -33,5 +33,10 @@ class Settings(BaseSettings):
     DIAGRAM_DIR: str = "./diagrams"
     DIAGRAM_TTL_SECONDS: int = 3600
 
+    # Multi-statement .sql script generation settings.
+    SQL_SCRIPT_DIR: str = "./sql_scripts"
+    SQL_SCRIPT_TTL_SECONDS: int = 3600
+    SQL_SCRIPT_MAX_STATEMENTS: int = 500
+
 
 settings = Settings()

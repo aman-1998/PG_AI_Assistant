@@ -45,6 +45,11 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
 
         llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=creds["api_key"], temperature=temperature)
 
+    elif provider == "groq":
+        from langchain_groq import ChatGroq
+
+        llm = ChatGroq(model=model_name, api_key=creds["api_key"], temperature=temperature)
+
     elif provider == "azure_openai":
         from langchain_openai import AzureChatOpenAI
 
@@ -64,6 +69,24 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
             region_name=creds.get("region"),
             aws_access_key_id=creds["api_key"],
             aws_secret_access_key=creds["secret_key"],
+            temperature=temperature,
+        )
+
+    elif provider == "local":
+        from langchain_openai import ChatOpenAI
+
+        if not creds.get("base_url"):
+            raise ValueError("A base URL is required for local LLM models (e.g. http://localhost:11434/v1)")
+
+        # Self-hosted models (Ollama, LM Studio, vLLM, llama.cpp server,
+        # text-generation-webui, ...) that expose an OpenAI-compatible
+        # "/v1/chat/completions" endpoint. Most of these don't require an API
+        # key at all, so fall back to a harmless placeholder - the ChatOpenAI
+        # SDK requires *some* non-empty string to be set.
+        llm = ChatOpenAI(
+            model=model_name,
+            api_key=creds.get("api_key") or "not-needed",
+            base_url=creds["base_url"],
             temperature=temperature,
         )
 

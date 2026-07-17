@@ -126,3 +126,20 @@ class ChatMessage(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")
+
+
+class Feedback(Base):
+    """User-submitted product feedback from the "Contact & Feedback" page.
+    `rating` is optional (1-5 stars) since a user may just want to leave a
+    comment without rating the product.
+    """
+
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    rating: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    user: Mapped["User"] = relationship()

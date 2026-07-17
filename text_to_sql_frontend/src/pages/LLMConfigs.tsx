@@ -16,9 +16,11 @@ import {
   DialogContentText,
   DialogActions,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import { apiClient, getErrorMessage } from "../api/client";
 import LLMConfigForm from "../components/LLMConfigForm";
 import type { LLMConfig } from "../types";
@@ -138,6 +140,35 @@ export default function LLMConfigs() {
       )}
 
       <LLMConfigForm open={formOpen} onClose={handleFormClose} onSaved={loadConfigs} initialData={editingConfig} />
+
+      <Box
+        display="flex"
+        alignItems="flex-start"
+        gap={1.5}
+        sx={{
+          mt: 4,
+          p: 2.5,
+          borderRadius: 3,
+          background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #0ea5e9 100%)",
+          boxShadow: `0 12px 30px ${alpha("#2563eb", 0.3)}`,
+          color: "common.white",
+        }}
+      >
+        <AutoAwesomeIcon sx={{ mt: 0.25 }} />
+        <Box>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Model choice shapes every answer
+          </Typography>
+          <Typography variant="body2" sx={{ opacity: 0.92 }}>
+            The accuracy, reasoning quality, and correctness of the SQL, explanations, and results
+            you get in chat depend directly on the capability of the AI model configured here.
+            Stronger, more capable models handle complex schemas and multi-step requests more
+            reliably, while lighter/cheaper models are faster but may need clearer, more specific
+            prompts to get the same quality of result. Choose the model that best matches how you
+            plan to use this assistant.
+          </Typography>
+        </Box>
+      </Box>
 
       <Dialog open={Boolean(deleteTarget)} onClose={handleDeleteCancel}>
         <DialogTitle>Delete LLM model?</DialogTitle>

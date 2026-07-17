@@ -50,3 +50,5 @@ id,job_id,operation,target_id,target_type,status,agent_connection_id,replacement
 49,AnalyzeWorkLoad-vplay-2026-07-15 02:00:07.970862,Analyze Workload,4,Database,jobcomplete,7,-1,2026-07-15T02:00:07.992442,2026-07-15T02:00:34.993484,2026-07-15T02:00:07.970862,1
 51,AnalyzeWorkLoad-vplay-2026-07-16 02:00:05.603824,Analyze Workload,4,Database,jobcomplete,7,-1,2026-07-16T02:00:05.620583,2026-07-16T02:00:33.725295,2026-07-16T02:00:05.603824,1
 50,AnalyzeWorkLoad-qadb-2026-07-16 02:00:02.945710,Analyze Workload,1,Database,jobcomplete,1,-1,2026-07-16T02:00:02.962785,2026-07-16T02:00:29.872010,2026-07-16T02:00:02.945710,1
+53,AnalyzeWorkLoad-vplay-2026-07-17 02:00:06.716472,Analyze Workload,4,Database,jobcomplete,7,-1,2026-07-17T02:00:06.732454,2026-07-17T02:00:33.469222,2026-07-17T02:00:06.716472,1
+52,AnalyzeWorkLoad-qadb-2026-07-17 02:00:03.471332,Analyze Workload,1,Database,jobcomplete,1,-1,2026-07-17T02:00:03.488311,2026-07-17T02:00:59.662062,2026-07-17T02:00:03.471332,1

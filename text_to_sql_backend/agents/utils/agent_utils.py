@@ -32,6 +32,7 @@ _SQL_AGENT_TOOLS = frozenset(
         "export_query_to_json",
         "generate_er_diagram",
         "get_object_ddl",
+        "generate_sql_script",
     }
 )
 

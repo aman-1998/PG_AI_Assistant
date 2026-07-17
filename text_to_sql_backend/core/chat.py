@@ -118,7 +118,16 @@ def _load_history(db: Session, session_id: int, retention_days: int) -> list[dic
     messages = (
         db.query(ChatMessage)
         .filter(ChatMessage.session_id == session_id, ChatMessage.created_at >= cutoff)
-        .order_by(ChatMessage.created_at.desc())
+        # `_persist_turn` adds the user + assistant row for a turn in the same
+        # commit, so their `created_at` values are frequently IDENTICAL down to
+        # the microsecond - ordering by created_at alone leaves ties to
+        # Postgres' whim, which can silently swap a turn's user/assistant order
+        # (the assistant's reply appearing BEFORE the question it answers).
+        # That makes the model think the preceding user question is still
+        # unanswered, causing it to re-answer/redo an already-completed turn
+        # alongside the new one. `id` strictly increases in insertion order, so
+        # use it as a tiebreaker to guarantee the true chronological order.
+        .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
         .limit(_HISTORY_TURNS * 2)
         .all()
     )

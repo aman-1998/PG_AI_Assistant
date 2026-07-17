@@ -21,16 +21,18 @@ interface Props {
 }
 
 const PROVIDERS: { value: LLMProvider; label: string }[] = [
-  { value: "openai", label: "OpenAI" },
   { value: "anthropic", label: "Anthropic (Claude)" },
-  { value: "gemini", label: "Google Gemini" },
   { value: "azure_openai", label: "Azure OpenAI" },
   { value: "bedrock", label: "AWS Bedrock" },
+  { value: "gemini", label: "Google Gemini" },
+  { value: "groq", label: "Groq" },
+  { value: "local", label: "Local LLM" },
+  { value: "openai", label: "OpenAI" },
 ];
 
 const DEFAULT_FORM = {
   alias: "",
-  provider: "openai" as LLMProvider,
+  provider: "anthropic" as LLMProvider,
   model_name: "",
   api_key: "",
   secret_key: "",
@@ -133,9 +135,29 @@ export default function LLMConfigForm({ open, onClose, onSaved, initialData }: P
               value={form.model_name}
               onChange={handleChange("model_name")}
               required
-              helperText="e.g. gpt-4o, claude-3-5-sonnet-20241022, gemini-1.5-pro, anthropic.claude-3-sonnet"
+              helperText={
+                form.provider === "local"
+                  ? "The exact model name/tag your local server has loaded, e.g. llama3.1, mistral, qwen2.5-coder"
+                  : form.provider === "groq"
+                    ? "e.g. llama-3.3-70b-versatile, llama-3.1-8b-instant, mixtral-8x7b-32768"
+                    : "e.g. gpt-4o, claude-3-5-sonnet-20241022, gemini-1.5-pro, anthropic.claude-3-sonnet"
+              }
             />
           </Grid>
+
+          {form.provider === "local" && (
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Base URL"
+                fullWidth
+                value={form.base_url}
+                onChange={handleChange("base_url")}
+                placeholder="http://localhost:11434/v1"
+                required
+                helperText="Any OpenAI-compatible endpoint - Ollama (/v1), LM Studio, vLLM, llama.cpp server, text-generation-webui, etc."
+              />
+            </Grid>
+          )}
 
           {form.provider !== "bedrock" && (
             <Grid size={{ xs: 12 }}>
@@ -145,7 +167,13 @@ export default function LLMConfigForm({ open, onClose, onSaved, initialData }: P
                 fullWidth
                 value={form.api_key}
                 onChange={handleChange("api_key")}
-                helperText={isEditing ? "Leave blank to keep the existing key" : undefined}
+                helperText={
+                  form.provider === "local"
+                    ? "Usually not required for local servers - leave blank unless yours needs one"
+                    : isEditing
+                      ? "Leave blank to keep the existing key"
+                      : undefined
+                }
               />
             </Grid>
           )}

@@ -13,7 +13,6 @@ import {
   CircularProgress,
   Alert,
   Link,
-  Button,
   Snackbar,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
@@ -270,9 +269,6 @@ export default function Chat() {
             {connection?.alias} ({connection?.db_name})
           </Typography>
           <Box display="flex" gap={2} alignItems="center">
-            <Button size="small" startIcon={<AttachFileIcon />} onClick={() => setUploadsOpen(true)}>
-              Uploads
-            </Button>
             <FormControl size="small" sx={{ minWidth: 220 }}>
               <InputLabel>LLM Model</InputLabel>
               <Select
@@ -303,6 +299,9 @@ export default function Chat() {
         <Paper variant="outlined" sx={{ flexGrow: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           <ChatWindow messages={messages} />
           <Box display="flex" gap={1} p={2} borderTop="1px solid #eee" alignItems="flex-end">
+            <IconButton color="primary" onClick={() => setUploadsOpen(true)} sx={{ mb: 0.5 }} title="Uploads">
+              <AttachFileIcon />
+            </IconButton>
             <TextField
               fullWidth
               multiline

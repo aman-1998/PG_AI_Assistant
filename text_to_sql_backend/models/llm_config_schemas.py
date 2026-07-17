@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-Provider = Literal["openai", "anthropic", "gemini", "azure_openai", "bedrock"]
+Provider = Literal["openai", "anthropic", "gemini", "azure_openai", "bedrock", "local", "groq"]
 
 
 class LLMConfigCreate(BaseModel):

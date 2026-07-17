@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config.settings import settings
 from core.agent import clear_cache as clear_agent_cache
 from db.postgres import init_db
-from routes import auth, chat, database_connections, health, llm_config, rag_uploads
+from routes import auth, chat, database_connections, feedback, health, llm_config, rag_uploads
 from services import mcp_client_service
 from services.llm_factory import clear_cache as clear_llm_cache
 from services.rag import rag_db
@@ -41,3 +41,4 @@ app.include_router(database_connections.router)
 app.include_router(llm_config.router)
 app.include_router(chat.router)
 app.include_router(rag_uploads.router)
+app.include_router(feedback.router)

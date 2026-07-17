@@ -96,6 +96,10 @@ export default function Documentation() {
           variant="scrollable"
           scrollButtons="auto"
           allowScrollButtonsMobile
+          sx={{
+            "& .MuiTabs-flexContainer": { justifyContent: "space-between" },
+            "& .MuiTab-root": { whiteSpace: "nowrap" },
+          }}
         >
           <Tab label="Overview" />
           <Tab label="Getting Started" />
@@ -382,6 +386,19 @@ export default function Documentation() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
+                    <TableCell>Generate a .sql script file</TableCell>
+                    <TableCell>
+                      "Create an ecommerce schema with all required tables, then give me the
+                      .sql file", "Generate a script with these tables and their indexes"
+                    </TableCell>
+                    <TableCell>
+                      Bundles multiple DDL/DML/DQL statements you asked for into a single
+                      downloadable <code>.sql</code> file (valid for 1 hour) — without executing
+                      any of them against your database, unless you separately and explicitly
+                      also ask for it to be applied/created there too.
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
                     <TableCell>Generate an ER diagram</TableCell>
                     <TableCell>"Give me an ER diagram for the public schema", "Show me a diagram of tables orders, customers, products"</TableCell>
                     <TableCell>
@@ -447,6 +464,43 @@ export default function Documentation() {
                   <Typography variant="body2">
                     The reply includes a direct download link and the exported row count — up
                     to 50,000 rows per file, higher than the normal in-chat preview limit.
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    Download links expire after <strong>1 hour</strong>, after which the file is
+                    deleted from the server.
+                  </Typography>
+                </li>
+              </Box>
+            </SectionCard>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <SectionCard icon={<CodeIcon color="primary" />} title="Generating a downloadable .sql script">
+              <Typography variant="body2" paragraph>
+                Ask for a combination of multiple DDL, DML, and DQL statements to be bundled into
+                a single downloadable <code>.sql</code> file instead of running them:
+              </Typography>
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                <li>
+                  <Typography variant="body2">
+                    <strong>Try:</strong> "Create an ecommerce schema with all required tables,
+                    foreign keys, views, sequences, and indexes, then give me the .sql file".
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    The agent drafts every statement, classifies each as DDL/DML/DQL, and returns
+                    a single <code>.sql</code> file with a download link and a breakdown of what
+                    it contains.
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    Generating the file <strong>never executes anything</strong> against your
+                    database — the statements are only run for real if you separately and
+                    explicitly also ask for that (e.g. "...and also create it in my database").
                   </Typography>
                 </li>
                 <li>
@@ -742,6 +796,20 @@ export default function Documentation() {
                 The chatbot runs the query and replies with a download link (valid for 1 hour,
                 up to 50,000 rows) instead of only showing the results inline. Only read-only
                 <code> SELECT</code>/<code>WITH</code> queries can be exported directly.
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="subtitle1">Can I generate a .sql file with multiple queries?</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="body2">
+                Yes — ask for what you want (e.g. "create an ecommerce schema with all required
+                tables, then give me the .sql file") and the chatbot bundles every DDL/DML/DQL
+                statement into a single downloadable <code>.sql</code> file, valid for 1 hour.
+                Generating the file never runs the statements against your database — it only
+                executes them too if you separately and explicitly also ask for that.
               </Typography>
             </AccordionDetails>
           </Accordion>

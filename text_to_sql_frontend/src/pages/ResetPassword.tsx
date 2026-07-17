@@ -1,7 +1,61 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Box, Paper, TextField, Button, Typography, Alert } from "@mui/material";
+import {
+  Box,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  InputAdornment,
+  CircularProgress,
+} from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import DataObjectIcon from "@mui/icons-material/DataObject";
 import { apiClient, getErrorMessage } from "../api/client";
+
+const gradientBoxSx = {
+  background: "linear-gradient(135deg, #1d4ed8 0%, #2563eb 45%, #0ea5e9 100%)",
+  p: 2,
+};
+
+const paperSx = {
+  p: 4,
+  width: 400,
+  borderRadius: 3,
+  boxShadow: "0 20px 45px rgba(15, 23, 42, 0.25)",
+};
+
+function BrandHeader({ title, subtitle }: { title: string; subtitle?: string }) {
+  return (
+    <Box display="flex" flexDirection="column" alignItems="center" mb={3}>
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={{
+          width: 52,
+          height: 52,
+          borderRadius: 2.5,
+          mb: 1.5,
+          background: "linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 100%)",
+          color: "common.white",
+        }}
+      >
+        <DataObjectIcon />
+      </Box>
+      <Typography variant="h5" fontWeight={600}>
+        {title}
+      </Typography>
+      {subtitle && (
+        <Typography variant="body2" color="text.secondary" textAlign="center">
+          {subtitle}
+        </Typography>
+      )}
+    </Box>
+  );
+}
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -34,10 +88,11 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Paper sx={{ p: 4, width: 380 }} elevation={3}>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" sx={gradientBoxSx}>
+        <Paper elevation={0} sx={paperSx}>
+          <BrandHeader title="Reset password" />
           <Alert severity="error">Missing or invalid reset link.</Alert>
-          <Typography variant="body2" mt={2}>
+          <Typography variant="body2" mt={3} textAlign="center" color="text.secondary">
             <Link to="/forgot-password">Request a new reset link</Link>
           </Typography>
         </Paper>
@@ -46,11 +101,9 @@ export default function ResetPassword() {
   }
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-      <Paper sx={{ p: 4, width: 380 }} elevation={3}>
-        <Typography variant="h5" mb={2}>
-          Reset password
-        </Typography>
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh" sx={gradientBoxSx}>
+      <Paper elevation={0} sx={paperSx}>
+        <BrandHeader title="Reset password" />
         {message && (
           <Alert severity="success" sx={{ mb: 2 }}>
             {message}
@@ -71,6 +124,13 @@ export default function ResetPassword() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            }}
           />
           <TextField
             label="Retype new password"
@@ -82,9 +142,34 @@ export default function ResetPassword() {
             error={confirmPassword.length > 0 && confirmPassword !== newPassword}
             helperText={confirmPassword.length > 0 && confirmPassword !== newPassword ? "Passwords do not match" : " "}
             required
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LockOutlinedIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            }}
           />
-          <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }} disabled={submitting}>
-            Reset password
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            disabled={submitting}
+            sx={{
+              mt: 2.5,
+              py: 1.1,
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "1rem",
+              borderRadius: 2,
+              background: "linear-gradient(90deg, #1d4ed8 0%, #2563eb 55%, #0ea5e9 100%)",
+              boxShadow: `0 8px 20px ${alpha("#2563eb", 0.35)}`,
+              "&:hover": {
+                background: "linear-gradient(90deg, #1e40af 0%, #1d4ed8 55%, #0284c7 100%)",
+              },
+            }}
+          >
+            {submitting ? <CircularProgress size={22} color="inherit" /> : "Reset password"}
           </Button>
         </form>
       </Paper>

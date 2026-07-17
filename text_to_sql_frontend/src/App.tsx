@@ -1,11 +1,28 @@
 import React from "react";
 import { Routes, Route, Navigate, Link, useLocation, useNavigate } from "react-router-dom";
-import { AppBar, Toolbar, Typography, Button, Box, Container, Avatar, Divider, Tooltip, IconButton } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  Container,
+  Avatar,
+  Divider,
+  Tooltip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from "@mui/material";
 import { alpha, type Breakpoint } from "@mui/material/styles";
 import StorageIcon from "@mui/icons-material/Storage";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SettingsIcon from "@mui/icons-material/Settings";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { useAuth } from "./context/AuthContext";
@@ -19,12 +36,14 @@ import LLMConfigs from "./pages/LLMConfigs";
 import Chat from "./pages/Chat";
 import Documentation from "./pages/Documentation";
 import Settings from "./pages/Settings";
+import ContactFeedback from "./pages/ContactFeedback";
 
 const NAV_ITEMS = [
   { to: "/connections", label: "Databases", icon: <StorageIcon fontSize="small" /> },
   { to: "/llm-configs", label: "LLM Models", icon: <SmartToyIcon fontSize="small" /> },
   { to: "/documentation", label: "Documentation", icon: <MenuBookIcon fontSize="small" /> },
   { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" /> },
+  { to: "/feedback", label: "Feedback", icon: <ChatBubbleOutlineIcon fontSize="small" /> },
 ];
 
 function NavLink({ to, label, icon }: { to: string; label: string; icon: React.ReactNode }) {
@@ -62,6 +81,13 @@ function Layout({
 }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = React.useState(false);
+
+  const handleLogoutConfirmed = () => {
+    setLogoutConfirmOpen(false);
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Box>
@@ -105,10 +131,7 @@ function Layout({
                 <Tooltip title="Logout">
                   <IconButton
                     size="small"
-                    onClick={() => {
-                      logout();
-                      navigate("/login");
-                    }}
+                    onClick={() => setLogoutConfirmOpen(true)}
                     sx={{ color: "common.white", "&:hover": { bgcolor: alpha("#ffffff", 0.15) } }}
                   >
                     <LogoutIcon fontSize="small" />
@@ -122,6 +145,19 @@ function Layout({
       <Container maxWidth={maxWidth} sx={{ py: 3, px: maxWidth === false ? { xs: 2, sm: 3 } : undefined }}>
         {children}
       </Container>
+
+      <Dialog open={logoutConfirmOpen} onClose={() => setLogoutConfirmOpen(false)}>
+        <DialogTitle>Log out?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>Are you sure you want to log out of PG AI Assistant?</DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLogoutConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleLogoutConfirmed} color="error" variant="contained">
+            Logout
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
@@ -179,6 +215,16 @@ export default function App() {
           <ProtectedRoute>
             <Layout maxWidth={false}>
               <Settings />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feedback"
+        element={
+          <ProtectedRoute>
+            <Layout maxWidth={false}>
+              <ContactFeedback />
             </Layout>
           </ProtectedRoute>
         }

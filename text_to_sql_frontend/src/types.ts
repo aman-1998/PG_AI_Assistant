@@ -39,7 +39,7 @@ export interface DatabaseMetrics {
   fetched_at: string;
 }
 
-export type LLMProvider = "openai" | "anthropic" | "gemini" | "azure_openai" | "bedrock";
+export type LLMProvider = "openai" | "anthropic" | "gemini" | "azure_openai" | "bedrock" | "local" | "groq";
 
 export interface LLMConfig {
   id: number;
@@ -85,3 +85,11 @@ export interface UploadedFile {
   chunk_count: number;
   created_at?: string;
 }
+
+export interface Feedback {
+  id: number;
+  message: string;
+  rating?: number | null;
+  created_at: string;
+}
+
