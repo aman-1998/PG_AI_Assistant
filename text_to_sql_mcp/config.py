@@ -38,5 +38,9 @@ class Settings(BaseSettings):
     SQL_SCRIPT_TTL_SECONDS: int = 3600
     SQL_SCRIPT_MAX_STATEMENTS: int = 500
 
+    # Chart (bar/line/pie PNG) generation settings.
+    CHART_DIR: str = "./charts"
+    CHART_TTL_SECONDS: int = 3600
+
 
 settings = Settings()

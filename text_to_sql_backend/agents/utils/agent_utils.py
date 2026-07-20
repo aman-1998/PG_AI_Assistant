@@ -24,6 +24,8 @@ _SQL_AGENT_TOOLS = frozenset(
         "list_schemas",
         "list_tables",
         "describe_table",
+        "get_table_comments",
+        "list_table_comments",
         "execute_query",
         "execute_ddl_dml",
         "get_query_execution_time",
@@ -33,6 +35,7 @@ _SQL_AGENT_TOOLS = frozenset(
         "generate_er_diagram",
         "get_object_ddl",
         "generate_sql_script",
+        "generate_chart",
     }
 )
 

@@ -112,6 +112,10 @@ async def get_database_metrics(
         disk_io_blocks_read_per_sec=result.get("disk_io_blocks_read_per_sec"),
         disk_io_buffers_written_per_sec=result.get("disk_io_buffers_written_per_sec"),
         disk_usage_bytes=disk_result.get("disk_usage_bytes"),
+        transactions_per_sec=result.get("transactions_per_sec"),
         active_connections=result.get("active_connections"),
+        total_connections=result.get("total_connections"),
+        max_connections=result.get("max_connections"),
+        largest_tables=disk_result.get("largest_tables") or [],
         fetched_at=datetime.datetime.now(datetime.timezone.utc),
     )

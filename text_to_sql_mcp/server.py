@@ -19,6 +19,7 @@ from mcp_instance import mcp
 
 # Import tool modules purely for their @mcp.tool() registration side-effects.
 from tools import (  # noqa: F401
+    chart_tools,
     ddl_tools,
     er_diagram_tools,
     explain_tools,
@@ -51,6 +52,7 @@ app = Starlette(
         Route("/exports/{file_id}", export_tools.download_export, methods=["GET"]),
         Route("/diagrams/{file_id}", er_diagram_tools.download_diagram, methods=["GET"]),
         Route("/sql-scripts/{file_id}", sql_script_tools.download_sql_script, methods=["GET"]),
+        Route("/charts/{file_id}", chart_tools.download_chart, methods=["GET"]),
         Mount("/", app=ConnectionTokenMiddleware(_mcp_asgi_app)),
     ],
     lifespan=lambda app: mcp.session_manager.run(),

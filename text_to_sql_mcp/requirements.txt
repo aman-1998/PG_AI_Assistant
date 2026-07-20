@@ -6,3 +6,4 @@ cryptography>=43.0.1,<44
 pydantic-settings>=2.6.1,<3
 sqlparse==0.5.1
 Pillow>=10.1,<11
+matplotlib>=3.9,<4

@@ -26,6 +26,11 @@ export interface DatabaseConnection {
   created_at: string;
 }
 
+export interface LargestTable {
+  table_name: string;
+  size_bytes: number;
+}
+
 export interface DatabaseMetrics {
   cpu_usage_approx_pct?: number | null;
   cpu_usage_note: string;
@@ -35,7 +40,11 @@ export interface DatabaseMetrics {
   disk_io_buffers_written_per_sec?: number | null;
   disk_io_note: string;
   disk_usage_bytes?: number | null;
+  transactions_per_sec?: number | null;
   active_connections?: number | null;
+  total_connections?: number | null;
+  max_connections?: number | null;
+  largest_tables: LargestTable[];
   fetched_at: string;
 }
 

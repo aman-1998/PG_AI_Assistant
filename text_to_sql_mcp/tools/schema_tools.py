@@ -52,10 +52,16 @@ def describe_table(table_name: str, schema: str = "public") -> dict:
 
 @mcp.tool()
 def get_table_comments(table_name: str, schema: str = "public") -> dict:
-    """Return Postgres native business documentation (COMMENT ON TABLE / COMMENT ON
-    COLUMN text) for a table, if any has been set via SQL. Empty/null values mean
-    no comment was ever added - this is not an error."""
+    """Return Postgres native business documentation (COMMENT ON SCHEMA / COMMENT ON
+    TABLE / COMMENT ON COLUMN text) for a table, if any has been set via SQL. Empty/
+    null values mean no comment was ever added - this is not an error; in that case
+    fall back to reasoning from the table name and column names/comments instead."""
     full_name = f"{schema}.{table_name}"
+    schema_comment_rows = fetch_all(
+        "SELECT obj_description(to_regnamespace(%s), 'pg_namespace') AS comment", (schema,)
+    )
+    schema_comment = schema_comment_rows[0]["comment"] if schema_comment_rows else None
+
     table_comment_rows = fetch_all(
         "SELECT obj_description(to_regclass(%s), 'pg_class') AS comment", (full_name,)
     )
@@ -70,7 +76,72 @@ def get_table_comments(table_name: str, schema: str = "public") -> dict:
     columns = fetch_all(columns_sql, (full_name,))
     return {
         "schema": schema,
+        "schema_comment": schema_comment,
         "table_name": table_name,
         "table_comment": table_comment,
         "columns": columns,
     }
+
+
+@mcp.tool()
+def list_table_comments(schema: str = "public") -> dict:
+    """Return Postgres native business documentation - the schema's own COMMENT ON
+    SCHEMA text, plus COMMENT ON TABLE / COMMENT ON COLUMN text for EVERY table in
+    the given schema - in one call. Use this to discover which table(s)/column(s)
+    are relevant to a business question (e.g. "website traffic", "sales",
+    "revenue") when the user didn't name exact tables, instead of calling
+    get_table_comments one table at a time. Tables/columns with no comment set are
+    still included with a null comment (not an error) - a schema with sparse or no
+    comments is common. When a table's table_comment is null/empty, do NOT skip
+    it - infer its likely purpose from its table_name and its columns' names and
+    comments instead (e.g. a table named `page_views` with columns `session_id`,
+    `url`, `viewed_at` is very likely relevant to a "website traffic" question
+    even with zero comments set).
+    """
+    schema_comment_rows = fetch_all(
+        "SELECT obj_description(to_regnamespace(%s), 'pg_namespace') AS comment", (schema,)
+    )
+    schema_comment = schema_comment_rows[0]["comment"] if schema_comment_rows else None
+
+    table_comment_rows = fetch_all(
+        """
+        SELECT c.relname AS table_name, obj_description(c.oid, 'pg_class') AS table_comment
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = %s AND c.relkind IN ('r', 'v', 'm', 'p')
+        ORDER BY c.relname
+        """,
+        (schema,),
+    )
+    column_comment_rows = fetch_all(
+        """
+        SELECT c.relname AS table_name, a.attname AS column_name,
+               col_description(a.attrelid, a.attnum) AS comment
+        FROM pg_catalog.pg_attribute a
+        JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE n.nspname = %s AND c.relkind IN ('r', 'v', 'm', 'p')
+          AND a.attnum > 0 AND NOT a.attisdropped
+        ORDER BY c.relname, a.attnum
+        """,
+        (schema,),
+    )
+    columns_by_table: dict[str, list[dict]] = {}
+    for row in column_comment_rows:
+        columns_by_table.setdefault(row["table_name"], []).append(
+            {"column_name": row["column_name"], "comment": row["comment"]}
+        )
+
+    return {
+        "schema": schema,
+        "schema_comment": schema_comment,
+        "tables": [
+            {
+                "table_name": row["table_name"],
+                "table_comment": row["table_comment"],
+                "columns": columns_by_table.get(row["table_name"], []),
+            }
+            for row in table_comment_rows
+        ],
+    }
+

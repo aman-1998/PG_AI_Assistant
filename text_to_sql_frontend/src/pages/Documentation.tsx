@@ -37,6 +37,7 @@ import SecurityIcon from "@mui/icons-material/Security";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import BarChartIcon from "@mui/icons-material/BarChart";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -126,8 +127,9 @@ export default function Documentation() {
                   <Typography variant="body2">
                     <strong>SQL Agent</strong> — turns your request into SQL (SELECT, INSERT,
                     UPDATE, DELETE, CREATE, ALTER, DROP) and executes it against your database.
-                    It can also generate a visual <strong>ER diagram</strong> of your tables and
-                    look up the exact <strong>DDL/definition</strong> of a table, view, function,
+                    It can also generate a visual <strong>ER diagram</strong> of your tables,
+                    render a <strong>bar, line, or pie chart</strong> from your data, and look up
+                    the exact <strong>DDL/definition</strong> of a table, view, function,
                     procedure, trigger, sequence, or index.
                   </Typography>
                 </li>
@@ -408,6 +410,16 @@ export default function Documentation() {
                     </TableCell>
                   </TableRow>
                   <TableRow>
+                    <TableCell>Generate a chart</TableCell>
+                    <TableCell>"Show me a bar chart of monthly signups", "Pie chart of orders by category", "Graph comparing this year's traffic to last year's"</TableCell>
+                    <TableCell>
+                      Runs the SQL needed to answer the question, then renders it as a{" "}
+                      <strong>bar, line, or pie chart</strong> (PNG) shown inline in the chat,
+                      with a direct download link, plus a short written explanation of what the
+                      chart shows.
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
                     <TableCell>Get an object's DDL / definition</TableCell>
                     <TableCell>"Give me the DDL for table customers", "Show me the definition of procedure add_two_nums", "Create query for the orders_view view"</TableCell>
                     <TableCell>
@@ -507,6 +519,92 @@ export default function Documentation() {
                   <Typography variant="body2">
                     Download links expire after <strong>1 hour</strong>, after which the file is
                     deleted from the server.
+                  </Typography>
+                </li>
+              </Box>
+            </SectionCard>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <SectionCard icon={<BarChartIcon color="primary" />} title="Generating charts & visualizations">
+              <Typography variant="body2" paragraph>
+                Ask for a chart when you want to see data visually instead of as a table of
+                numbers. The agent writes the SQL needed to answer your question, then renders
+                the result as an image shown inline in the chat.
+              </Typography>
+              <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                Chart types the chatbot can generate
+              </Typography>
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                <li>
+                  <Typography variant="body2">
+                    <strong>Bar chart</strong> — best for comparing values across categories
+                    (e.g. sales by region, orders by product category).
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    <strong>Line chart</strong> — best for trends over time (e.g. monthly
+                    revenue, daily active users, year-over-year growth).
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    <strong>Pie chart</strong> — best for showing proportions/share of a whole
+                    (e.g. percentage of orders per payment method).
+                  </Typography>
+                </li>
+              </Box>
+              <Typography variant="subtitle2" sx={{ mt: 2 }}>
+                Example queries you can ask
+              </Typography>
+              <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                <li>
+                  <Typography variant="body2">"Show me a bar chart of total sales by product category."</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    "How much has website traffic increased since last year? Show it as a line
+                    graph."
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">"Give me a pie chart of orders by payment method."</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">"Graph our monthly revenue for this year compared to last year."</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">"Plot the number of new signups per month as a bar chart."</Typography>
+                </li>
+              </Box>
+              <Box component="ul" sx={{ pl: 2, m: 0, mt: 1.5 }}>
+                <li>
+                  <Typography variant="body2">
+                    If you don't specify a chart type, the agent picks a sensible default based on
+                    your data (trend over time → line, comparing categories → bar, share of a
+                    total → pie).
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    The reply includes the chart image inline plus a short written explanation of
+                    key numbers, the trend direction, and any notable outliers — never just the
+                    image alone.
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    To find the right table(s) for a business question that doesn't name exact
+                    tables (e.g. "website traffic"), the agent reads schema/table/column
+                    documentation comments (if set) and falls back to reasoning from table and
+                    column names.
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">
+                    Chart images are generated on demand and the download link expires after{" "}
+                    <strong>1 hour</strong>, after which the file is deleted from the server.
                   </Typography>
                 </li>
               </Box>

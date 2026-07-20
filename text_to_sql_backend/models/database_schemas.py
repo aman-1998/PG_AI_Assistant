@@ -43,6 +43,11 @@ class DatabaseConnectionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LargestTable(BaseModel):
+    table_name: str
+    size_bytes: int
+
+
 class DatabaseMetrics(BaseModel):
     """Approximate, Postgres-native metrics (no OS-level access)."""
 
@@ -54,7 +59,11 @@ class DatabaseMetrics(BaseModel):
     disk_io_buffers_written_per_sec: float | None = None
     disk_io_note: str = "Approximated from pg_stat_database / pg_stat_bgwriter deltas over ~1s"
     disk_usage_bytes: int | None = None
+    transactions_per_sec: float | None = None
     active_connections: int | None = None
+    total_connections: int | None = None
+    max_connections: int | None = None
+    largest_tables: list[LargestTable] = Field(default_factory=list)
     fetched_at: datetime.datetime
 
 
