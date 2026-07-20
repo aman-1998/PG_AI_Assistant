@@ -22,7 +22,7 @@ import StorageIcon from "@mui/icons-material/Storage";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import SettingsIcon from "@mui/icons-material/Settings";
-import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import PhoneIcon from "@mui/icons-material/Phone";
 import LogoutIcon from "@mui/icons-material/Logout";
 import DataObjectIcon from "@mui/icons-material/DataObject";
 import { useAuth } from "./context/AuthContext";
@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   { to: "/llm-configs", label: "LLM Models", icon: <SmartToyIcon fontSize="small" /> },
   { to: "/documentation", label: "Documentation", icon: <MenuBookIcon fontSize="small" /> },
   { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" /> },
-  { to: "/feedback", label: "Contact Us", icon: <ChatBubbleOutlineIcon fontSize="small" /> },
+  { to: "/feedback", label: "Contact Us", icon: <PhoneIcon fontSize="small" /> },
 ];
 
 function NavLink({ to, label, icon }: { to: string; label: string; icon: React.ReactNode }) {
