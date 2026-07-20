@@ -4,7 +4,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from sqlalchemy import text
 
-from db.postgres import engine
+from db.database import engine
 
 router = APIRouter(tags=["health"])
 

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from db.models import User
-from db.postgres import get_db
+from db.database import get_db
 from models.feedback_schemas import FeedbackCreateRequest, FeedbackResponse
 from services import feedback_service
 from services.auth_service import get_current_user

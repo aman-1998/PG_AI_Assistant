@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from db.models import User
-from db.postgres import get_db
+from db.database import get_db
 from models.llm_config_schemas import LLMConfigCreate, LLMConfigResponse, LLMConfigUpdate
 from services import llm_config_service
 from services.auth_service import get_current_user

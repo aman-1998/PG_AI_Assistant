@@ -10,7 +10,7 @@ export const CHAT_HISTORY_RETENTION_MIN_DAYS = 1;
 export const CHAT_HISTORY_RETENTION_MAX_DAYS = 60;
 
 export const MAX_CHAT_SESSIONS_MIN = 1;
-export const MAX_CHAT_SESSIONS_MAX = 20;
+export const MAX_CHAT_SESSIONS_MAX = 25;
 
 export interface DatabaseConnection {
   id: number;

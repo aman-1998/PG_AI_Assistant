@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from db.models import User
-from db.postgres import get_db
+from db.database import get_db
 from models.database_schemas import (
     DatabaseConnectionCreate,
     DatabaseConnectionResponse,

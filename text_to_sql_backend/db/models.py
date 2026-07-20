@@ -16,7 +16,13 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from config.settings import CHAT_HISTORY_RETENTION_DEFAULT_DAYS, MAX_CHAT_SESSIONS_DEFAULT
-from db.postgres import Base
+from db.database import Base
+
+# Primary-key type: BIGINT on Postgres, but plain INTEGER on SQLite. SQLite only
+# treats an exact "INTEGER PRIMARY KEY" column as an alias for the rowid (and
+# thus auto-incrementing); a "BIGINT PRIMARY KEY" would NOT auto-increment. The
+# variant keeps BIGINT on Postgres while rendering INTEGER on SQLite.
+IntPk = BigInteger().with_variant(Integer, "sqlite")
 
 
 def _utcnow() -> datetime.datetime:
@@ -26,7 +32,7 @@ def _utcnow() -> datetime.datetime:
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -56,7 +62,7 @@ class DatabaseConnection(Base):
     __tablename__ = "database_connections"
     __table_args__ = (UniqueConstraint("user_id", "alias", name="uq_user_alias"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     alias: Mapped[str] = mapped_column(String(120), nullable=False)
     host: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -78,7 +84,7 @@ class LLMConfig(Base):
     __tablename__ = "llm_configs"
     __table_args__ = (UniqueConstraint("user_id", "alias", name="uq_user_llm_alias"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     alias: Mapped[str] = mapped_column(String(120), nullable=False)
     provider: Mapped[str] = mapped_column(String(32), nullable=False)  # openai|anthropic|gemini|azure_openai|bedrock
@@ -99,7 +105,7 @@ class LLMConfig(Base):
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     database_connection_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("database_connections.id"), nullable=False, index=True
@@ -117,7 +123,7 @@ class ChatSession(Base):
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     session_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("chat_sessions.id"), nullable=False, index=True)
     role: Mapped[str] = mapped_column(String(16), nullable=False)  # user|assistant
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -136,7 +142,7 @@ class Feedback(Base):
 
     __tablename__ = "feedback"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(IntPk, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False, index=True)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from core.chat import stream_chat_message
 from db.models import ChatMessage, ChatSession, User
-from db.postgres import get_db
+from db.database import get_db
 from models.chat_schemas import (
     ChatMessageResponse,
     ChatSessionRenameRequest,

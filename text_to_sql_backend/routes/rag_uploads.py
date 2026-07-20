@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from config.rag_config import rag_config
 from db.models import User
-from db.postgres import get_db
+from db.database import get_db
 from models.rag_schemas import UploadedFileListResponse, UploadedFileResponse
 from services import db_connection_service, llm_config_service
 from services.auth_service import get_current_user

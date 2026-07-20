@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from config.settings import settings
 from db.models import User
-from db.postgres import get_db
+from db.database import get_db
 
 _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer_scheme = HTTPBearer(auto_error=False)
@@ -87,7 +87,13 @@ def reset_password_with_token(db: Session, token: str, new_password: str) -> Non
     token_hash = _hash_reset_token(token)
     user = db.query(User).filter(User.reset_token_hash == token_hash).first()
     now = datetime.datetime.now(datetime.timezone.utc)
-    if not user or not user.reset_token_expires_at or user.reset_token_expires_at < now:
+    expires_at = user.reset_token_expires_at if user else None
+    # SQLite doesn't preserve timezone info, so datetimes come back naive even
+    # though they were stored as UTC; normalise before comparing to avoid a
+    # "can't compare offset-naive and offset-aware datetimes" TypeError.
+    if expires_at is not None and expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
+    if not user or not expires_at or expires_at < now:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired reset link")
 
     user.password_hash = hash_password(new_password)

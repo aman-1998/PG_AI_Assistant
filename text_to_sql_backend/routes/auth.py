@@ -6,7 +6,7 @@ import logging
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from db.postgres import get_db
+from db.database import get_db
 from models.auth_schemas import (
     ForgotPasswordRequest,
     LoginRequest,

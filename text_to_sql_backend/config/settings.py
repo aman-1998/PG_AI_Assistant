@@ -1,7 +1,34 @@
 """Application settings loaded from environment variables / .env file."""
 from __future__ import annotations
 
+from pathlib import Path
+
+from platformdirs import user_data_dir
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Anchor the .env file to the backend package root (config/ -> backend root) so
+# it's found no matter which working directory the server is launched from. A
+# relative path would be resolved against the process CWD, which silently falls
+# back to defaults (e.g. empty SMTP creds) when the server is started elsewhere.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_ROOT / ".env"
+
+# Application identity used to derive the per-user data directory.
+_APP_NAME = "PGAIAssistant"
+
+# Default location for all runtime data (the SQLite database, etc.). We store
+# data OUTSIDE the code/install tree so app updates, re-clones, pip upgrades, and
+# read-only installs never overwrite or lose the user's database. On a fresh
+# install this resolves to a "data" subfolder of the OS per-user data directory,
+# e.g.
+#   Windows: %LOCALAPPDATA%\PGAIAssistant\data
+#   Linux:   ~/.local/share/PGAIAssistant/data
+#   macOS:   ~/Library/Application Support/PGAIAssistant/data
+# giving a final DB path of <app-data-dir>/PGAIAssistant/data/app.db. Override
+# with the DATA_DIR env var (e.g. a mounted Docker volume, or "./data" for a
+# repo-local development database).
+_DEFAULT_DATA_DIR = str(Path(user_data_dir(_APP_NAME, appauthor=False)) / "data")
 
 # Bounds for the user-configurable "how many days of chat history to keep/use as
 # context" setting (routes/auth.py's PATCH /auth/me/chat-retention, db.models.User).
@@ -14,29 +41,25 @@ CHAT_HISTORY_RETENTION_DEFAULT_DAYS = 30
 # db.models.User). Oldest sessions beyond this count are automatically deleted
 # whenever a new chat session is started.
 MAX_CHAT_SESSIONS_MIN = 1
-MAX_CHAT_SESSIONS_MAX = 20
+MAX_CHAT_SESSIONS_MAX = 25
 MAX_CHAT_SESSIONS_DEFAULT = 15
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=str(_ENV_FILE), extra="ignore")
 
-    # Postgres control-plane store.
-    # NOTE: for real deployments, override this via the .env file instead of
-    # editing this hardcoded default — committing real credentials to source
-    # control is a security risk (CWE-798). This default is only meant as a
-    # fallback for local dev.
-    DATABASE_URL: str = "postgresql+psycopg2://postgres:root@localhost:5432/aiassistant?sslmode=disable"
+    # Directory where all runtime data is stored (the SQLite database file, plus
+    # any future on-disk artifacts). Kept out of the code/install tree so it
+    # survives updates and re-installs. Defaults to the OS per-user data dir; set
+    # DATA_DIR in the environment/.env to relocate it. A relative value (e.g.
+    # "./data") is resolved against the backend package root, never the CWD.
+    DATA_DIR: str = _DEFAULT_DATA_DIR
 
-    # Postgres schema the control-plane tables (and, unless overridden, the RAG
-    # tables) are created in/looked up from — instead of the default "public" schema.
-    DB_SCHEMA: str = "nltosql"
-
-    # Postgres + pgvector store for uploaded-file RAG (separate from customer Postgres
-    # connections). Optional: if unset, reuses DATABASE_URL (same Postgres server, its
-    # own rag_files/rag_chunks tables). If unreachable/misconfigured (e.g. pgvector
-    # extension unavailable), the uploaded-file RAG feature is disabled but the rest of
-    # the app works normally.
+    # Store for uploaded-file RAG (separate from customer database connections).
+    # Optional: if unset, reuses the main SQLite database (its own
+    # rag_files/rag_chunks tables) via the sqlite-vec extension. If the vector
+    # store is unreachable/misconfigured, the uploaded-file RAG feature is
+    # disabled but the rest of the app works normally.
     RAG_DATABASE_URL: str | None = None
 
     # Auth
@@ -79,6 +102,26 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def DATABASE_URL(self) -> str:
+        """SQLite connection URL for the control-plane store, always derived from
+        DATA_DIR. The app is SQLite-only (no Postgres), so this is computed
+        rather than configured."""
+        return f"sqlite:///{(Path(self.DATA_DIR) / 'app.db').as_posix()}"
+
+    @model_validator(mode="after")
+    def _resolve_data_dir(self) -> "Settings":
+        # Resolve DATA_DIR: expand "~" and resolve a relative value against the
+        # backend root (NOT the fragile process CWD) so the same directory is
+        # used regardless of where the server is launched. Create it if missing.
+        data_dir = Path(self.DATA_DIR).expanduser()
+        if not data_dir.is_absolute():
+            data_dir = _BACKEND_ROOT / data_dir
+        data_dir = data_dir.resolve()
+        data_dir.mkdir(parents=True, exist_ok=True)
+        self.DATA_DIR = str(data_dir)
+        return self
 
 
 settings = Settings()
