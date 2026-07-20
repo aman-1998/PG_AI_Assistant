@@ -1,3 +1,23 @@
+# Secrets / environment (NEVER commit)
+.env
+.env.*
+!.env.example
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
 # Files generated at runtime as a result of user queries (chat-triggered tool
 # output) - these are not part of the codebase and are opportunistically
 # deleted/expired by the app itself (see config.py's *_TTL_SECONDS settings).

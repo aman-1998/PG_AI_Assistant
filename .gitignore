@@ -1,0 +1,75 @@
+# ==========================================================================
+# Root .gitignore for PG_AI_Assistant (backend + mcp + frontend)
+# Per-project .gitignore files add more specific rules on top of these.
+# ==========================================================================
+
+# --- Secrets / environment (NEVER commit) ---------------------------------
+# Real credentials live in .env; commit a sanitized .env.example instead.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+.eggs/
+build/
+develop-eggs/
+downloads/
+sdist/
+wheels/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test / type / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- Node / frontend -------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+# --- Logs ------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Runtime data (SQLite databases, generated artifacts) ------------------
+data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# --- OS / editor junk ------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~
+.idea/

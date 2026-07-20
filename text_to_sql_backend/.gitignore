@@ -1,0 +1,30 @@
+# Secrets / environment (NEVER commit — contains SMTP password, JWT secret,
+# encryption keys). Commit a sanitized .env.example instead.
+.env
+.env.*
+!.env.example
+
+# Local SQLite database (runtime data: users, encrypted credentials, chat
+# history, feedback). Each install generates its own via init_db() — never commit it.
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environment
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
