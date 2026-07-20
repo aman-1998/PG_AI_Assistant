@@ -104,6 +104,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # linuxdeploy can't use FUSE on CI runners; extract-and-run instead.
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          # Avoid linuxdeploy's strip step that fails on newer Ubuntu toolchains.
+          NO_STRIP: true
         with:
           projectPath: text_to_sql_frontend
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'app-v__VERSION__' }}
