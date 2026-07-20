@@ -1,0 +1,114 @@
+name: desktop-release
+
+# Builds the PG AI Assistant desktop app (Tauri) for Windows, macOS and Linux.
+# The two Python services are frozen with PyInstaller on each runner, copied into
+# the Tauri resources folder, and bundled into the native installers.
+#
+# Trigger by pushing a tag like `v1.0.0`, or run manually from the Actions tab.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: ""
+          - os: macos-latest
+            target: "--target aarch64-apple-darwin"
+          - os: macos-13
+            target: "--target x86_64-apple-darwin"
+          - os: ubuntu-22.04
+            target: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin' || matrix.os == 'macos-13' && 'x86_64-apple-darwin' || '' }}
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: text_to_sql_frontend/src-tauri -> target
+
+      - name: Install Linux system dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Freeze backend sidecar (PyInstaller)
+        working-directory: text_to_sql_backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+          python -m PyInstaller build_backend.spec --noconfirm --clean
+
+      - name: Freeze MCP sidecar (PyInstaller)
+        working-directory: text_to_sql_mcp
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+          python -m PyInstaller build_mcp.spec --noconfirm --clean
+
+      - name: Copy sidecars into Tauri resources
+        shell: bash
+        run: |
+          dest="text_to_sql_frontend/src-tauri/resources"
+          rm -rf "$dest/pg-ai-backend" "$dest/pg-ai-mcp"
+          mkdir -p "$dest"
+          cp -r text_to_sql_backend/dist/pg-ai-backend "$dest/pg-ai-backend"
+          cp -r text_to_sql_mcp/dist/pg-ai-mcp "$dest/pg-ai-mcp"
+
+      - name: Install frontend dependencies
+        working-directory: text_to_sql_frontend
+        run: npm ci
+
+      - name: Build desktop bundle
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: text_to_sql_frontend
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'app-v__VERSION__' }}
+          releaseName: "PG AI Assistant v__VERSION__"
+          releaseBody: "Automated desktop build. Download the installer for your platform below."
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.target }}

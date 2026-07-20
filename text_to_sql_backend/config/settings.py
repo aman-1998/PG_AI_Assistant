@@ -1,21 +1,63 @@
 """Application settings loaded from environment variables / .env file."""
 from __future__ import annotations
 
+import json
+import secrets as _secrets
+import sys
 from pathlib import Path
 
 from platformdirs import user_data_dir
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Anchor the .env file to the backend package root (config/ -> backend root) so
-# it's found no matter which working directory the server is launched from. A
-# relative path would be resolved against the process CWD, which silently falls
-# back to defaults (e.g. empty SMTP creds) when the server is started elsewhere.
+# When packaged as a desktop app (PyInstaller / frozen), __file__ points inside
+# the bundle's temp extraction dir, so anchor to the executable's folder instead;
+# in normal (source) runs, anchor to the backend package root (config/ -> root).
+_IS_FROZEN = bool(getattr(sys, "frozen", False))
 _BACKEND_ROOT = Path(__file__).resolve().parent.parent
-_ENV_FILE = _BACKEND_ROOT / ".env"
+_APP_ROOT = Path(sys.executable).resolve().parent if _IS_FROZEN else _BACKEND_ROOT
+
+# Anchor the .env file so it's found no matter which working directory the app
+# is launched from. In a frozen desktop build a .env is optional (secrets are
+# auto-generated below), but power users can still drop one next to the binary.
+_ENV_FILE = _APP_ROOT / ".env"
 
 # Application identity used to derive the per-user data directory.
 _APP_NAME = "PGAIAssistant"
+
+# Auto-generated secrets are persisted here (outside DATA_DIR, at a fixed
+# per-user location both this backend and the MCP server can compute) so they
+# stay stable across restarts and are shared between the two processes.
+_SECRETS_FILE = Path(user_data_dir(_APP_NAME, appauthor=False)) / "secrets.json"
+
+# Insecure placeholder values shipped as field defaults. When a secret still
+# holds its placeholder (i.e. the operator did not set a real one via env/.env),
+# it is replaced at startup with a strong, persisted, auto-generated value.
+_SECRET_PLACEHOLDERS = {
+    "JWT_SECRET": "change-this-jwt-secret",
+    "DATA_ENCRYPTION_KEY": "change-this-data-encryption-key",
+    "DB_CONNECTION_TOKEN_SECRET": "change-this-shared-secret-with-mcp",
+}
+
+
+def _get_or_create_secret(name: str) -> str:
+    """Return a persisted random secret for ``name``, creating the store on first
+    use. Shared with text_to_sql_mcp via the same ``secrets.json`` path so the
+    DB-connection token secret matches across processes."""
+    data: dict[str, str] = {}
+    try:
+        data = json.loads(_SECRETS_FILE.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        data = {}
+    if not data.get(name):
+        data[name] = _secrets.token_urlsafe(48)
+        _SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _SECRETS_FILE.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        try:  # best-effort: restrict to owner on POSIX
+            _SECRETS_FILE.chmod(0o600)
+        except OSError:
+            pass
+    return data[name]
 
 # Default location for all runtime data (the SQLite database, etc.). We store
 # data OUTSIDE the code/install tree so app updates, re-clones, pip upgrades, and
@@ -117,10 +159,17 @@ class Settings(BaseSettings):
         # used regardless of where the server is launched. Create it if missing.
         data_dir = Path(self.DATA_DIR).expanduser()
         if not data_dir.is_absolute():
-            data_dir = _BACKEND_ROOT / data_dir
+            data_dir = _APP_ROOT / data_dir
         data_dir = data_dir.resolve()
         data_dir.mkdir(parents=True, exist_ok=True)
         self.DATA_DIR = str(data_dir)
+
+        # Replace any secret still holding its insecure placeholder default with
+        # a strong, persisted, auto-generated value. No-op when the operator has
+        # provided real secrets via env/.env (e.g. Docker deployments).
+        for _name, _placeholder in _SECRET_PLACEHOLDERS.items():
+            if getattr(self, _name) == _placeholder:
+                setattr(self, _name, _get_or_create_secret(_name))
         return self
 
 
