@@ -17,7 +17,8 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 // Auto-logout after this long with no user activity (mouse/keyboard/touch/scroll).
 const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
 const LAST_ACTIVITY_KEY = "last_activity_at";
-const ACTIVITY_EVENTS = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"] as const;
+// mousemove excluded — hovering cursor without clicking should not reset the timer
+const ACTIVITY_EVENTS = ["mousedown", "keydown", "scroll", "touchstart"] as const;
 const IDLE_CHECK_INTERVAL_MS = 30 * 1000;
 const ACTIVITY_WRITE_THROTTLE_MS = 5 * 1000;
 
