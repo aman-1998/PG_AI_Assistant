@@ -28,7 +28,7 @@ jobs:
           - os: macos-13
             target: "--target x86_64-apple-darwin"
           - os: ubuntu-22.04
-            target: ""
+            target: "--bundles deb,rpm"
 
     runs-on: ${{ matrix.os }}
 
