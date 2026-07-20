@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   { to: "/llm-configs", label: "LLM Models", icon: <SmartToyIcon fontSize="small" /> },
   { to: "/documentation", label: "Documentation", icon: <MenuBookIcon fontSize="small" /> },
   { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" /> },
-  { to: "/feedback", label: "Feedback", icon: <ChatBubbleOutlineIcon fontSize="small" /> },
+  { to: "/feedback", label: "Contact Us", icon: <ChatBubbleOutlineIcon fontSize="small" /> },
 ];
 
 function NavLink({ to, label, icon }: { to: string; label: string; icon: React.ReactNode }) {

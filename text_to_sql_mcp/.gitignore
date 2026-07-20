@@ -1,0 +1,16 @@
+# Files generated at runtime as a result of user queries (chat-triggered tool
+# output) - these are not part of the codebase and are opportunistically
+# deleted/expired by the app itself (see config.py's *_TTL_SECONDS settings).
+# Keep the directories tracked (via .gitkeep) but ignore their contents.
+
+/exports/*
+!/exports/.gitkeep
+
+/diagrams/*
+!/diagrams/.gitkeep
+
+/sql_scripts/*
+!/sql_scripts/.gitkeep
+
+/charts/*
+!/charts/.gitkeep
