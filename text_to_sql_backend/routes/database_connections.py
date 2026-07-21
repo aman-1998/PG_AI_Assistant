@@ -29,12 +29,15 @@ def create_database_connection(
 ) -> DatabaseConnectionResponse:
     conn = db_connection_service.create_connection(db, current_user.id, payload)
     ok, message = db_connection_service.test_connection(conn)
+    if not ok:
+        # Only keep reachable databases: discard the just-created row so an
+        # unreachable database never shows up as a card.
+        db_connection_service.delete_connection(db, current_user.id, conn.id)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not connect to database: {message}")
     conn.last_checked_at = datetime.datetime.now(datetime.timezone.utc)
-    conn.last_check_status = "ok" if ok else "error"
+    conn.last_check_status = "ok"
     db.commit()
     db.refresh(conn)
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Could not connect to database: {message}")
     return DatabaseConnectionResponse.model_validate(conn)
 
 

@@ -16,10 +16,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from config.settings import settings
-from db.models import DatabaseConnection
+from db.models import ChatSession, DatabaseConnection
 from models.database_schemas import DatabaseConnectionCreate, DatabaseConnectionUpdate
 from services.encryption_util import decrypt_text, encrypt_text
-
 
 def create_connection(db: Session, user_id: int, payload: DatabaseConnectionCreate) -> DatabaseConnection:
     existing = (
@@ -78,6 +77,13 @@ def update_connection(
 
 def delete_connection(db: Session, user_id: int, connection_id: int) -> None:
     conn = get_connection(db, user_id, connection_id)
+    # chat_sessions reference this connection via a FK with no DB-level cascade,
+    # so remove them (and their messages, via ChatSession's cascade) first to
+    # avoid an IntegrityError. Removing a saved connection intentionally discards
+    # the chats that were tied to it.
+    sessions = db.query(ChatSession).filter(ChatSession.database_connection_id == connection_id).all()
+    for session in sessions:
+        db.delete(session)
     db.delete(conn)
     db.commit()
 

@@ -147,6 +147,22 @@ export default function DatabaseCard({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [tablesOpen, setTablesOpen] = useState(false);
+  const [status, setStatus] = useState<string | null>(connection.last_check_status ?? null);
+  const [checking, setChecking] = useState(false);
+
+  const checkReachability = async () => {
+    setChecking(true);
+    try {
+      const res = await apiClient.post<{ success: boolean; message: string }>(
+        `/database-connections/${connection.id}/test`,
+      );
+      setStatus(res.data.success ? "ok" : "error");
+    } catch {
+      setStatus("error");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -165,6 +181,7 @@ export default function DatabaseCard({
   const refreshMetrics = async () => {
     setLoading(true);
     setError(null);
+    checkReachability();
     try {
       const res = await apiClient.get<DatabaseMetrics>(`/database-connections/${connection.id}/metrics`);
       setMetrics(res.data);
@@ -214,8 +231,8 @@ export default function DatabaseCard({
         <Box mt={1}>
           <Chip
             size="small"
-            label={connection.last_check_status === "ok" ? "Reachable" : connection.last_check_status || "Unknown"}
-            color={connection.last_check_status === "ok" ? "success" : "default"}
+            label={checking ? "Checking\u2026" : status === "ok" ? "Reachable" : "Unreachable"}
+            color={status === "ok" ? "success" : checking ? "default" : "error"}
           />
         </Box>
 

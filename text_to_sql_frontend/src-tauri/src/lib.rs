@@ -1,4 +1,5 @@
 use std::net::TcpStream;
+use std::path::PathBuf;
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -12,6 +13,71 @@ const MCP_PORT: u16 = 8020;
 
 /// Holds the spawned sidecar processes so they can be killed on exit.
 struct Sidecars(Mutex<Vec<Child>>);
+
+/// Path to the shared secrets store, computed to match the Python services'
+/// `platformdirs.user_data_dir("PGAIAssistant", appauthor=False)/secrets.json`
+/// exactly on each OS (Tauri's own app_data_dir uses the bundle identifier and
+/// would point elsewhere).
+fn secrets_file_path() -> Option<PathBuf> {
+    let base: PathBuf = if cfg!(windows) {
+        PathBuf::from(std::env::var_os("LOCALAPPDATA")?)
+    } else if cfg!(target_os = "macos") {
+        PathBuf::from(std::env::var_os("HOME")?)
+            .join("Library")
+            .join("Application Support")
+    } else {
+        match std::env::var_os("XDG_DATA_HOME") {
+            Some(x) if !x.is_empty() => PathBuf::from(x),
+            _ => PathBuf::from(std::env::var_os("HOME")?)
+                .join(".local")
+                .join("share"),
+        }
+    };
+    Some(base.join("PGAIAssistant").join("secrets.json"))
+}
+
+/// 32 random bytes, hex-encoded - a strong passphrase for the shared token secret.
+fn generate_secret() -> String {
+    let mut buf = [0u8; 32];
+    getrandom::getrandom(&mut buf).expect("OS RNG unavailable");
+    buf.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Return the shared `DB_CONNECTION_TOKEN_SECRET`, reading it from the shared
+/// secrets.json if present, otherwise generating and persisting it (preserving
+/// any other keys the Python services store there). Resolving it here - once,
+/// before either sidecar starts - and injecting it into both guarantees the
+/// backend and MCP server always agree on the key used to encrypt/decrypt the
+/// per-request DB connection token (otherwise a first-launch race between the
+/// two processes generating their own secrets causes "Invalid padding bytes").
+fn resolve_shared_token_secret() -> Option<String> {
+    let path = secrets_file_path()?;
+    let mut data: serde_json::Map<String, serde_json::Value> = match std::fs::read_to_string(&path)
+    {
+        Ok(contents) => serde_json::from_str(&contents).unwrap_or_default(),
+        Err(_) => serde_json::Map::new(),
+    };
+    if let Some(existing) = data
+        .get("DB_CONNECTION_TOKEN_SECRET")
+        .and_then(|v| v.as_str())
+    {
+        if !existing.is_empty() {
+            return Some(existing.to_string());
+        }
+    }
+    let secret = generate_secret();
+    data.insert(
+        "DB_CONNECTION_TOKEN_SECRET".to_string(),
+        serde_json::Value::String(secret.clone()),
+    );
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    if let Ok(serialized) = serde_json::to_string_pretty(&data) {
+        std::fs::write(&path, serialized).ok();
+    }
+    Some(secret)
+}
 
 /// Platform-specific executable name for a PyInstaller onedir binary.
 fn exe_name(base: &str) -> String {
@@ -86,17 +152,31 @@ fn start_sidecars(app: &tauri::App) {
         "http://tauri.localhost,tauri://localhost,https://tauri.localhost,http://localhost:5173"
             .to_string();
 
+    // Shared secret both processes use to encrypt/decrypt the DB connection token.
+    // Resolved once here so the backend and MCP server never diverge.
+    let token_secret = resolve_shared_token_secret();
+    if token_secret.is_none() {
+        log::error!("could not resolve shared DB_CONNECTION_TOKEN_SECRET; sidecars will fall back to their own generation");
+    }
+
+    let mut backend_env = vec![
+        ("CORS_ORIGINS", cors),
+        ("MCP_SERVER_URL", format!("http://127.0.0.1:{MCP_PORT}/mcp")),
+    ];
+    let mut mcp_env: Vec<(&str, String)> = Vec::new();
+    if let Some(secret) = &token_secret {
+        backend_env.push(("DB_CONNECTION_TOKEN_SECRET", secret.clone()));
+        mcp_env.push(("DB_CONNECTION_TOKEN_SECRET", secret.clone()));
+    }
+
     let backend = spawn_sidecar(
         app,
         "pg-ai-backend",
         "pg-ai-backend",
         BACKEND_PORT,
-        &[
-            ("CORS_ORIGINS", cors),
-            ("MCP_SERVER_URL", format!("http://127.0.0.1:{MCP_PORT}/mcp")),
-        ],
+        &backend_env,
     );
-    let mcp = spawn_sidecar(app, "pg-ai-mcp", "pg-ai-mcp", MCP_PORT, &[]);
+    let mcp = spawn_sidecar(app, "pg-ai-mcp", "pg-ai-mcp", MCP_PORT, &mcp_env);
 
     let state = app.state::<Sidecars>();
     let mut guard = state.0.lock().expect("sidecar lock");
