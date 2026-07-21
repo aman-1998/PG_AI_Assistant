@@ -38,7 +38,13 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
         # truncates replies (e.g. a markdown table for a few dozen rows) mid-
         # generation with stop_reason="max_tokens". Raise the cap so normal-sized
         # chat replies (including full result tables) aren't cut off.
-        llm = ChatAnthropic(model=model_name, api_key=creds["api_key"], temperature=temperature, max_tokens=8192)
+        #
+        # temperature is intentionally NOT passed: newer Anthropic models
+        # (e.g. claude-sonnet-5 / extended-thinking models) reject the
+        # temperature parameter ("temperature is deprecated for this model"),
+        # and older ones fall back to Anthropic's server default. Sending it
+        # would break the newer models at both validation and query time.
+        llm = ChatAnthropic(model=model_name, api_key=creds["api_key"], max_tokens=8192)
 
     elif provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
