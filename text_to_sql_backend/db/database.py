@@ -40,6 +40,7 @@ def _run_lightweight_migrations() -> None:
     prefix = ""
     ts_type = "TIMESTAMP" if IS_SQLITE else "TIMESTAMPTZ"
     int_type = "INTEGER" if IS_SQLITE else "INT"
+    bool_true = "1" if IS_SQLITE else "TRUE"
     statements = [
         f"ALTER TABLE {prefix}users ADD COLUMN chat_history_retention_days "
         f"{int_type} NOT NULL DEFAULT {CHAT_HISTORY_RETENTION_DEFAULT_DAYS}",
@@ -48,6 +49,8 @@ def _run_lightweight_migrations() -> None:
         f"ALTER TABLE {prefix}users ADD COLUMN max_chat_sessions "
         f"{int_type} NOT NULL DEFAULT {MAX_CHAT_SESSIONS_DEFAULT}",
         f"ALTER TABLE {prefix}chat_sessions ADD COLUMN title VARCHAR(255)",
+        f"ALTER TABLE {prefix}llm_configs ADD COLUMN supports_temperature "
+        f"BOOLEAN NOT NULL DEFAULT {bool_true}",
     ]
     for statement in statements:
         try:

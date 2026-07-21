@@ -94,6 +94,11 @@ class LLMConfig(Base):
     base_url: Mapped[str | None] = mapped_column(String(500), nullable=True)  # azure endpoint / custom base url
     region: Mapped[str | None] = mapped_column(String(64), nullable=True)  # bedrock region
     api_version: Mapped[str | None] = mapped_column(String(64), nullable=True)  # azure api version
+    # Whether this model accepts a `temperature` parameter. Determined empirically
+    # at validation time (some newer reasoning models - e.g. certain Anthropic /
+    # OpenAI models - reject temperature). Defaults to True; flipped to False if
+    # the provider rejects temperature during the validation ping.
+    supports_temperature: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)

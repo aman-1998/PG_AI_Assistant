@@ -18,7 +18,7 @@ def create_llm_config(db: Session, user_id: int, payload: LLMConfigCreate) -> LL
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Alias already in use")
 
     try:
-        validate_llm_credentials(
+        supports_temperature = validate_llm_credentials(
             {
                 "provider": payload.provider,
                 "model_name": payload.model_name,
@@ -44,6 +44,7 @@ def create_llm_config(db: Session, user_id: int, payload: LLMConfigCreate) -> LL
         base_url=payload.base_url,
         region=payload.region,
         api_version=payload.api_version,
+        supports_temperature=supports_temperature,
     )
     db.add(config)
     db.commit()
@@ -88,7 +89,7 @@ def update_llm_config(db: Session, user_id: int, config_id: int, payload: LLMCon
             "api_version": data.get("api_version", config.api_version),
         }
         try:
-            validate_llm_credentials(creds)
+            config.supports_temperature = validate_llm_credentials(creds)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
@@ -128,4 +129,5 @@ def get_decrypted_credentials(config: LLMConfig) -> dict:
         "base_url": config.base_url,
         "region": config.region,
         "api_version": config.api_version,
+        "supports_temperature": config.supports_temperature,
     }

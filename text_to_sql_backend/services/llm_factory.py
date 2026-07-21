@@ -12,24 +12,49 @@ _llm_cache: dict[str, Any] = {}
 
 def _cache_key(creds: dict) -> str:
     fingerprint = "|".join(
-        str(creds.get(k)) for k in ("provider", "model_name", "api_key", "secret_key", "base_url", "region", "api_version")
+        str(creds.get(k))
+        for k in (
+            "provider",
+            "model_name",
+            "api_key",
+            "secret_key",
+            "base_url",
+            "region",
+            "api_version",
+            "supports_temperature",
+        )
     )
     return hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()
 
 
+def _is_temperature_error(exc: Exception) -> bool:
+    """Whether a provider error is complaining about the temperature parameter
+    (e.g. newer Anthropic / OpenAI reasoning models that reject or deprecate it).
+    """
+    return "temperature" in str(exc).lower()
+
+
 def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
-    """Build (or reuse a cached) LangChain chat model instance for the given credentials."""
+    """Build (or reuse a cached) LangChain chat model instance for the given credentials.
+
+    If ``creds["supports_temperature"]`` is False, the temperature parameter is
+    omitted entirely - required for models that reject it (determined empirically
+    at validation time). Defaults to True when the key is absent.
+    """
     key = _cache_key(creds)
     if key in _llm_cache:
         return _llm_cache[key]
 
     provider = creds["provider"]
     model_name = creds["model_name"]
+    # Spread into each provider constructor: {"temperature": ...} normally, or {}
+    # for models that reject the parameter.
+    temp_kwargs = {"temperature": temperature} if creds.get("supports_temperature", True) else {}
 
     if provider == "openai":
         from langchain_openai import ChatOpenAI
 
-        llm = ChatOpenAI(model=model_name, api_key=creds["api_key"], temperature=temperature)
+        llm = ChatOpenAI(model=model_name, api_key=creds["api_key"], **temp_kwargs)
 
     elif provider == "anthropic":
         from langchain_anthropic import ChatAnthropic
@@ -39,22 +64,21 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
         # generation with stop_reason="max_tokens". Raise the cap so normal-sized
         # chat replies (including full result tables) aren't cut off.
         #
-        # temperature is intentionally NOT passed: newer Anthropic models
-        # (e.g. claude-sonnet-5 / extended-thinking models) reject the
-        # temperature parameter ("temperature is deprecated for this model"),
-        # and older ones fall back to Anthropic's server default. Sending it
-        # would break the newer models at both validation and query time.
-        llm = ChatAnthropic(model=model_name, api_key=creds["api_key"], max_tokens=8192)
+        # temperature is passed only when the model supports it: newer Anthropic
+        # models (e.g. claude-sonnet-5 / extended-thinking models) reject the
+        # temperature parameter ("temperature is deprecated for this model").
+        # supports_temperature is determined empirically at validation time.
+        llm = ChatAnthropic(model=model_name, api_key=creds["api_key"], max_tokens=8192, **temp_kwargs)
 
     elif provider == "gemini":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
-        llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=creds["api_key"], temperature=temperature)
+        llm = ChatGoogleGenerativeAI(model=model_name, google_api_key=creds["api_key"], **temp_kwargs)
 
     elif provider == "groq":
         from langchain_groq import ChatGroq
 
-        llm = ChatGroq(model=model_name, api_key=creds["api_key"], temperature=temperature)
+        llm = ChatGroq(model=model_name, api_key=creds["api_key"], **temp_kwargs)
 
     elif provider == "azure_openai":
         from langchain_openai import AzureChatOpenAI
@@ -64,7 +88,7 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
             api_key=creds["api_key"],
             api_version=creds.get("api_version") or "2024-06-01",
             azure_deployment=model_name,
-            temperature=temperature,
+            **temp_kwargs,
         )
 
     elif provider == "bedrock":
@@ -75,7 +99,7 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
             region_name=creds.get("region"),
             aws_access_key_id=creds["api_key"],
             aws_secret_access_key=creds["secret_key"],
-            temperature=temperature,
+            **temp_kwargs,
         )
 
     elif provider == "local":
@@ -93,7 +117,7 @@ def get_llm_from_credentials(creds: dict, temperature: float = 0.0):
             model=model_name,
             api_key=creds.get("api_key") or "not-needed",
             base_url=creds["base_url"],
-            temperature=temperature,
+            **temp_kwargs,
         )
 
     else:
@@ -140,15 +164,35 @@ def extract_provider_error_message(exc: Exception) -> str:
     return str(exc)
 
 
-def validate_llm_credentials(creds: dict) -> None:
+def validate_llm_credentials(creds: dict) -> bool:
     """Make a minimal real call to the provider to confirm the given credentials
     (api key/secret, model name, endpoint, region, etc.) actually work.
 
-    Raises ValueError with a human-readable message if the provider rejects the
-    credentials/model or the call otherwise fails.
+    Also detects empirically whether the model accepts a ``temperature`` parameter:
+    it first pings with temperature, and if the provider rejects temperature it
+    retries without it. This future-proofs against any current or future model
+    that deprecates temperature (e.g. newer Anthropic / OpenAI reasoning models)
+    without hardcoding model names.
+
+    Returns:
+        True if the model accepts temperature, False if it must be omitted.
+
+    Raises:
+        ValueError with a human-readable message if the provider rejects the
+        credentials/model or the call otherwise fails.
     """
     try:
-        llm = get_llm_from_credentials(creds, temperature=0.0)
+        llm = get_llm_from_credentials({**creds, "supports_temperature": True}, temperature=0.0)
         llm.invoke("ping")
+        return True
     except Exception as exc:  # noqa: BLE001 - surface the provider's own error to the caller
+        if _is_temperature_error(exc):
+            try:
+                llm = get_llm_from_credentials({**creds, "supports_temperature": False})
+                llm.invoke("ping")
+                return False
+            except Exception as retry_exc:  # noqa: BLE001
+                raise ValueError(
+                    f"Could not validate LLM credentials: {extract_provider_error_message(retry_exc)}"
+                ) from retry_exc
         raise ValueError(f"Could not validate LLM credentials: {extract_provider_error_message(exc)}") from exc
